@@ -1,0 +1,81 @@
+1、在一个项目里要使用npm前：
+    1）在终端下将目录cd到该项目里
+    2）在终端下输入指令为该项目创建npm的json环境：npm init
+执行1）2）步之后就可以在该项目下使用npm功能了
+
+2、将终端定位到项目目录下，使用命令：npm i/install koa，意味利用npm将koa安装到当前目录
+
+3、使用npm时指令开头有就是npm ，使用node时指令开头就是node
+
+4、使用koa包：
+    1）利用npm下载koa包到项目下
+    2）创建一个入口文件，app.js
+    3）在app.js文件中引入koa包：var koa = require("koa");
+    4）new一个koa实例，也称应用程序对象：var app = new Koa();
+    5）接下来就可以将中间件注册到应用程序对象上来了：
+                // ctx为上下文，next为下一个中间件，这两个参数是app.use()的默认参数
+                app.use(async (ctx, next) => { 
+                    console.log("dkjdla");
+                    await next();
+                    ...
+                });
+    6）绑定监听端口号：app.listen(8888);
+注意，ctx和中间件概念是koa的重要概念，中间件其实就是一个注册到app应用程序对象上的函数
+
+5、做完4、之后，在终端用node运行该app.js文件，只要用户用浏览器等，向对应的端口发送一个http请求
+(用浏览器发送http请求方法：localhost:端口号/127.0.0.1:端口号)，那么app.js文件中的第一个中间件
+就会被执行，若第一个中间件有next();，那么接着第二个中间件也会被执行，以此类推地去执行中间件
+
+7、koa中间件的执行其实是一个洋葱模型，即 fn1上( fn2上( fn3上( )fn3下 )fn2下 )fn1下，
+即像下面的中间件执行流程中，先执行fn1上，再fn2上，再fn2下，在fn1下
+        app.use(async (ctx, next) => {
+            fn1上；
+            await next();
+            fn1下；
+        });
+        app.use(async (ctx, next) => {
+            fn2上；
+            await next();
+            fn2下；
+        });
+
+8、由于koa中间件的执行流程是洋葱模型，又由于nodejs是异步编程思想，所以我们在编写中间件时，
+在(ctx, next)前加async ，在next()前加await ，
+这里我们先记着，先不用去理解
+
+9、 app.use(async (ctx, next) => {
+            fn1上；
+            await next();
+            fn1下；
+    });
+
+10、var a = next(); 接收到的s是一个promise，即中间件的返回结果是一个promise，即使中间件最后return的
+不是promise，也会被强制地转化为promise
+
+11、对资源的操作基本全是异步操作，例如读文件、操作数据库、发送http请求等
+
+12、终端定位到当前目录，并输入命令：npm i    可以一次性下载package.json文件下dependencies下，即项目依赖的所有包
+
+13、var nowTime = Date.now();    获取当前的时间
+
+14、async 和 await 是异步编程的终极解决方案，将异步编程变成同步编程的思维，async 和 await一定是成对出现的
+await有两个功能，一是进行计算，将promise转化为普通值，而是将阻塞进程，将程序变成多线程的同步机制
+async则是将普通纸转化为promise
+
+15、const axios = require("axios");
+const res = axios.get(http://....);
+利用axios包功能可以在程序中发送一个http请求
+
+16、要保证中间件是按照洋葱模型来执行的话，那么必须是每个中间件的next();前面都必须写上await ，
+以及每个箭头函数() => {}前都得加上async ，这样就能保证中间件是按照洋葱模型来执行的；
+如果是一部分中间件有加async 和 await，一部分没有，那么就会是一部分有阻塞，一部分没有阻塞，
+那么中间件的执行便会混乱，不能按照洋葱模型流程来执行；
+可以将async 和 await 记住就是跟中间件配套的
+
+17、那么koa中间件要按照中间件为什么一定要按照洋葱模型来执行呢，它的好处：
+    1）中间件执行流程我们是知道的，稳定的，而不是混乱是
+    2）洋葱模型中每个中间件被next();分为两部分，这样我们可以在中间件1的next();后获取到其他下级中间件的数据，以此类推，
+    所以获取数据更加简单方便
+
+18、ctx是中间件的默认参数之一，意味上下文，也可理解为类似总线，可以将数据绑定在总线上面后，其他中间件就可以
+从总线上拿到该数据

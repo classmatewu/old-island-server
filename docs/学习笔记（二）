@@ -1,0 +1,182 @@
+1、koa是中间件编程，所以基本代码都是要写在中间件里的
+
+2、koa路由：用于接收用户的api请求，并做出相应的响应，向用户返回结果
+1）初级路由（即用if函数实现对用户的不同请求做出不同响应）：
+    app.use(async (ctx, next) => {
+        console.log(ctx.path); // 获取用户请求的api，即url中localhost:8080后面的字符串
+        console.log(ctx.method); // 获取用户请求的方法，get、post等,浏览器的访问请求默认是get
+        // 初级路由——if函数，根据请求做出不同的响应
+        if(ctx.path === "/myfirst" && ctx.method === "GET") {
+            // return "success"; // 这样的返回是无效的
+            // ctx.body = "success" // 这样就会向用户的请求返回"success"字符串
+            ctx = {key: "success"} // 这样就会向用户的请求返回一个json
+        }
+        if(ctx.path === "/...." && ctx.method === " ") {
+            ...
+        }
+    });
+
+2）koa路由：编写koa路由分为三步：
+    1）引入koa-router包，并new一个Router实例
+    2）调用路由的方法响应用户请求（相当于初级路由的if函数）:
+        router.post()/router.delete()/router.get()/router.put()   增删查改
+    3）将路由注册到中间件里：app.use(router.routes());
+
+// 1.1引入koa-router包，并new一个Router实例：
+const Router = require("koa-router");
+const router = new Router();
+// 2、使用router.xxx()函数
+router.get("/myfirst", (ctx, next) => {
+    // 注意，router.xxx()函数的第二个匿名函数参数其实也是一个中间件，并非所有的中间件都需要手动地注册到app.use()上
+    ctx.body = "success";
+})
+// 3、使用app.use() 将路由注册到中间件上
+app.use(router.routes());
+
+3、每一个2、中的路由就是对用户的一个请求做出响应，可以将所有的API请求响应都写在app.js这一个文件里，
+但这样代码的阅读以及维护是相当糟糕的；我们应该对后端的数据进行整理分类，可以根据数据的类型划分为
+几个的大的数据主题；在编码的过程中再将一些小的主题从大主题中再细分开来，主题的划分是渐进的；
+先确定好几个大的数据主题方向，进而再编码过程中可以再将每个大主题细分出一些小主题
+
+4、在一个项目中，app.js一般是入口文件，属于上层级别的模块，而主题分类的各类就是属于下级别的模块，
+上层模块可以调用下级模块，但下级模块去调用上级模块就是不太合适的，所以我们一般不在其他模块require app.js，
+而是将各个主题分类包装成一个个的模块，然后导出供app.js这个入口文件去调用
+eg：《旧岛小样》中的book和classic等是一个个的主题类别模块，用module.expores = router; 导出，然后app.js
+用const book = require("相对路径");  导入后就而已用这个book路由API了
+
+5、const koa = require("koa"); // 引用npm下载来的包，就是"包名"，且引用后还要实例化
+const book = require("./api/v1/book"); // 引用自己定义的模块，就是"相对路径"，
+且引用后不用实例化，因为我们在自定义模块里已经有实例化了
+
+6、下载一个npm包可以设置自动重启，而不用每次修改好代码后手动按ctrl + c，手动重启
+1）全局安装nodemon包：npm i nodemon -g
+2）在要设置自动重启的文件前加：nodemon
+这样就不用每次去终端重启了，修改好代码后保存就自动重启了
+
+7、点击调试小爬虫，然后配置文件：
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // 这一段代码可以实现既能调试，又能自动重启
+            "type": "node",
+            "request": "launch",
+            "name": "nodemon",
+            "runtimeExecutable": "nodemon",
+            "program": "${workspaceFolder}/app.js",
+            "restart": true,
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            // 这一段代码实现调试入口app.js文件
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program",
+            "program": "${workspaceFolder}/app.js"
+        },
+        {
+            // 这一段代码实现调试当前文件
+            "type": "node",
+            "request": "launch",
+            "name": "当前文件",
+            "program": "${file}"
+        },
+
+    ]
+}
+
+配置好文件保存后，点击调试小爬虫后就可以选择相应的调试功能了
+
+8、由于每个项目我们要写比较多的api接口，那么相应的router模块也就多了，我们在入口文件app.js中都需要
+手动地去require导入每个router模块，然后再将每个router注册到app.use上，这样是非常麻烦的，我们可以
+用npm下载一个require-directory包，然后利用该包就可以批量地导入、注册路由了
+1）下载require-directory包：npm i require-directory
+2）导入require-directory包，且不用去new一个实例：const requireDirectory = require("require-directory");
+3）导入指定文件夹下的全部模块，（全部的module，不仅包括router模块）：
+        requireDirectory(module, "./app/api", {
+            visit: whenLoadModule
+        });
+    注意，第一个参数是module，第二个参数是"路径"，第三个参数是一个回调函数，whenLoadModule是一个自定义的函数，
+    whenLoadModule函数用于将路由注册到app.use()中;即导入./api目录下的全部module，并执行回调函数里的自定义
+    函数fn(); 将路由注册到app.use()中
+
+4）定义fn函数：
+    function whenLoadModule(aModuleObj) {
+        // 每导入一个模块对象，就判断它是不是Router模块，如果是则注册到app.use()上
+        if(aModuleObj instanceof Router) {
+            app.use(aModuleObj.routes());
+        }
+    }
+    注意，4）这种写法只兼容模块在导出时是：module.exports = xxx; 而不兼容：module.exports = { xxx: xxx };
+
+完成以上4步，就可以在该文件中导入并注册所有的路由模块了
+
+9、process.cwd();可以获取到的是当前vscode的根目录的路径
+如何查看process.cwd();的值，我们可以选中这句代码，然后点击鼠标右键，选择“调试：计算”
+就可以得到该路径，但记住该路径是当前vscode的根目录的路径，不管这句代码放在任何文件的任何位置都是同样的值
+
+10、在一些情况下我们要用到相对路径或绝对路径，相对路径有时比较简单方便，但有时依懒性太强，
+因此移动某个文件时可能就会出错；绝对路径相对就安全一点，在vscode中绝对路径可以我们就可以用
+process.cwd();拼接上得到我们当前文件的绝对路径
+eg(es6的写法):var decority = `${process.cwd()}/island/app/api/v1`;
+
+11、由于app.js是程序的入口文件，所以我们一般不让app.js里的代码太臃肿，所以我们可以在项目
+根目录下建一个core文件夹，然后在core下建一个init.js文件，将app.js的每个功能域提取包装成一个函数，
+放到/core/init.js文件中的js class类中，然后导出该类，再在app.js中导入使用，类似处理路由模块那里，
+只不过路由模块按类别分为多个，分别放在app/api/v1下面；而提取的一个函数表示一个功能部分，统一放在core/init.js中类中
+
+1）core/init.js中：
+总体思路：创建一个类，在类中定义一个静态的入口文件，在里面调用从app.js文件中提取过来的代码函数，将app实例作为入口函数的参数
+传进来，并将app定义为静态变量，这样就可以直接类名.app访问，之后编写功能函数，最后导出该类
+
+代码为：
+const Router = require("koa-router");
+const requireDirectory = require("require-directory");
+
+// 定义一个js类
+class InitManager{
+    // 定义一个静态方法，为入口方法
+    static initCore(app) { // 将app.js中的app实例传进来
+        InitManager.app = app; // 将参数app绑定到InitManager类上，即为静态变量
+        InitManager.initLoadRouters(); //调用类中的initLoadRouters()静态方法，即处理一次性导入注册路由的功能部分
+    }
+
+    static initLoadRouters() {
+        const apiDirectory = `${process.cwd()}/app/api`; // es6写法，得到要导入路由文件所在的绝对路径
+        requireDirectory(module, apiDirectory, {
+            visit: whenLoadModule
+        });
+
+        function whenLoadModule(aModuleObj) {
+            if(aModuleObj instanceof Router) {
+                InitManager.app.use(aModuleObj.routes());
+            }
+        }
+    }
+
+}
+
+module.exports = InitManager;   // 导出该类
+
+2）app.js中：
+总体思路：
+    1）导入该类（导入类不用new一个实体）：const InitManager = require("./core/init");
+    2）调用该类的入口函数：InitManager.initCore(app);
+
+代码为：
+const Koa = require("koa");
+const InitManager = require("./core/init"); // 引入InitManager类，引入类不用new一个实体
+
+const app = new Koa();
+
+InitManager.initCore(app); //调用InitManager类的入口函数initCore(),并传入参数app
+
+app.listen(8080);
+
+
+12、《代码大全2》
+JavaScript语法搞笑图

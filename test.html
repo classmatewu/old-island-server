@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.bootcss.com/axios/0.16.2/axios.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <button id="login" onclick="fn()">点击调用</button>
+    <script>
+        function fn(){
+            // const params = {
+            //     client_id: 'f761080ac9d2d10a',
+            //     redirect_uri: 'http://f.yiban.cn/djsdsfdfsdfsdfsdf'
+            // }
+
+            // axios.request({
+            //     url: 'https://openapi.yiban.cn/oauth/authorize',
+            //     params,
+            //     method: 'get'
+            // }).then(res => {
+            //     console.log(res);
+            // });
+
+            location.href='https://openapi.yiban.cn/oauth/authorize?client_id=f761080ac9d2d10a&redirect_uri=http://f.yiban.cn/djsdsfdfsdfsdfsdf'
+
+        }
+    </script>
+</body>
+</html>

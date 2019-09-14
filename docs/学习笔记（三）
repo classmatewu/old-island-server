@@ -1,0 +1,73 @@
+1、用户可以通过4种方式向服务器传递参数：
+可以利用postman模拟用户传递参数：该请求方式为post，输入url地址为：localhost:8080/v1/3/classic/latest?name=8yue
+在Body中选择raw，然后选json格式，可以在postman编辑器里输入要传递的json参数
+在Header中输入参数名，以及参数值
+然后点击sent
+
+以上便是用户发送post请求，并传递参数的4种方法：
+1）url中的3即为第一种传递参数的方法：在url中传递参数
+2）url中的?后面的name=8yue即为第二种传递参数的方法，在url后用？
+3）Header
+4）Body
+
+用户发送post请求，并向服务器传递参数，服务器端如何接受这些参数：
+一）是通过ctx.xxx的方式来获取到参数
+router.post("/v1/:id/classic/latest", (ctx, next) => {
+    const path = ctx.params; // 3
+    const query = ctx.request.query; // "8yue"
+    const headers = ctx.request.header; // header
+    const body = ctx.request.body; // body
+    ctx.body = {
+        key: "classic"
+    }
+    // 注意，body方式的参数获取需要用到一个npm包，下载好后在app.js文件中引入，
+    // 并需要将其中间件注册到app.use()上,就可以像上面那样获取到body了
+    // 在app.js的代码为：
+    // const parser = require("koa-bodyparser");
+    // app.use(parser()); // 调用parser()才得到一个中间件
+});
+
+二）是可以通过检验器来获取参数，方便好用
+eg: 
+const v = new PositiveIntValidator().validate(ctx);
+const id = v.get("path.id", parse=false) // 第一个参数取到id指，第二个参数是是否将id转为本来的int型，默认是true，一般我们不加即默认
+
+
+2、从1、拿到用户发来的数据后，我们都要进行校验，可以引用lin-validator校验器进一步写自己所需要的校验方法
+
+3、因为当我们的代码出现错误要自己排查错误、或者告诉前端、用户等、或者一个npm包要告诉使用者错误信息，
+所以我们得对我们的代码进行异常处理，通常有两种方法：1）直接return false / null
+    2）try {
+
+    } catch {
+        throw(error);
+    } 
+最好是使用2）的方法，即检测到error后抛出来，这样就不会丢失这个error错误信息了
+
+当然，我们不可能每个函数都try{}catch{}，而且try{}catch{}对异步编程也不太有效，我们使用全局的异常处理，
+结合promise、async、await进行函数链的异常捕获与处理，具体看koa的4-3、4-4小节课程
+
+4、以lin-validator校验器为基类，在/app/validators/ 下编写自己需要的校验类class，然后导出
+然后在需要校验用户传递进来的参数引用该类，实例化对象后调用校验函数进行校验，如邮箱是否合理，id是否是正整数等
+
+5、注意，文件导出有两种，
+1）是module.exports = xxx，这种做法即将exports对象直接赋值为xxx，所以在被导入时就是：const xxx = require("路径");
+2）是module.exports = { xxx:xxx, yyy:yyy ... }，这种做法即将多个导出对象包装为一个类，再赋值给exports对象，
+所以在被导入时：const {xxx:a, yyy:b} = require("路径");
+
+1）用于只导出一个对象时，2）用于同时导出多个对象元素，且导入也能同时导入，a，b为xxx，yyy对象起的另一个名字
+
+6、try catch 结合 async 、 await处理异步程序异常的结论：
+只要函数的返回结果是promise，那么我们就可以用try catch 结合 async、await处理异步程序异常，且所有的异步函数
+都要加上async和await
+
+7、ide也能捕获异常，但ide捕获的异常例如语法错误这些低级的错误，而我们去try catch的异常一般是去try我们业务逻辑
+部分的异常，好让我们自己或者他人知道错误点，更加高效地排查错误，更加高效地进行开发
+
+8、throw和return一样，执行了就会跳过本函数中的后面代码
+9、如果一个jsclass是继承于其他类的，那么我们要在这个子类中用this，那么就一定要加一句super();
+
+10、项目的环境分为两种：一种是开发环境dev，一种是生产环境prod，在配置文件config.js中写好是哪种环境，并在
+公共函数unit.js文件中将环境申明到全局global全局异常处理捕获到抛出的异常后；如果开发环境，则直接抛出捕获
+的异常信息到控制台，方便我们排查错误，如果程序上线了，就设置为生产环境，捕获到的异常信息经过我们的处理后
+返回给前端或者用户让他们知道
